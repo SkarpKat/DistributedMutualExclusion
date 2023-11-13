@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "github.com/SkarpKat/DistributedMutualExclusion";
+
+package Service;  
+
+service Service{
+    rpc Request(RequestMessage) returns (ResponseMessage);
+}
+
+message RequestMessage{
+    string message = 1;
+    int32 id = 2;
+    int64 timestamp = 3;
+}
+
+message ResponseMessage{
+    string message = 1;
+    int32 id = 2;
+    int64 timestamp = 3;
+}
