@@ -1,0 +1,39 @@
+2023/11/13 20:57:31 Port: 0,10001 added to slice
+2023/11/13 20:57:31 Port: 1,10002 added to slice
+2023/11/13 20:57:31 Port: 2,10003 added to slice
+2023/11/13 20:57:46 Received request from node 0 with timestamp 0
+2023/11/13 20:58:09 Node 1 is requesting critical section
+2023/11/13 20:58:09 Response from node 0: WANTED
+2023/11/13 20:58:09 Response from node 2: RELEASED
+2023/11/13 20:59:01 Received request from node 2 with timestamp 14
+2023/11/13 20:59:01 Node 2 added to queue
+2023/11/13 22:10:15 Port: 0,10001 added to slice
+2023/11/13 22:10:15 Port: 1,10002 added to slice
+2023/11/13 22:10:15 Port: 2,10003 added to slice
+2023/11/13 22:10:23 Received request from node 0 with timestamp 0
+2023/11/13 22:18:28 Port: 0,10001 added to slice
+2023/11/13 22:18:28 Port: 1,10002 added to slice
+2023/11/13 22:18:28 Port: 2,10003 added to slice
+2023/11/13 22:18:35 Received request from node 0 with timestamp 0
+2023/11/13 22:18:35 Queueing request from node 0
+2023/11/13 22:19:01 Node 1 is requesting critical section
+2023/11/13 22:19:01 Response from node 0: HELD
+2023/11/13 22:19:01 Node 1 is in critical section
+2023/11/13 22:19:01 Response from node 2: RELEASED
+2023/11/13 22:19:10 Received request from node 2 with timestamp 9
+2023/11/13 22:19:10 Granting request to node 2
+2023/11/13 22:35:46 Port: 0,10001 added to slice
+2023/11/13 22:35:46 Port: 1,10002 added to slice
+2023/11/13 22:35:46 Port: 2,10003 added to slice
+2023/11/13 22:35:54 Received request from node 0 with timestamp 0
+2023/11/13 22:35:54 Queueing request from node 0
+2023/11/13 22:37:24 Port: 0,10001 added to slice
+2023/11/13 22:37:25 Port: 1,10002 added to slice
+2023/11/13 22:37:25 Port: 2,10003 added to slice
+2023/11/13 22:37:33 Received request from node 0 with timestamp 0
+2023/11/13 22:37:33 Queueing request from node 0
+2023/11/13 22:38:14 Port: 0,10001 added to slice
+2023/11/13 22:38:14 Port: 1,10002 added to slice
+2023/11/13 22:38:14 Port: 2,10003 added to slice
+2023/11/13 22:38:20 Received request from node 0 with timestamp 1
+2023/11/13 22:38:20 Queueing request from node 0

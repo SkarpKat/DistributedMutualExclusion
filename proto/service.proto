@@ -4,18 +4,25 @@ option go_package = "github.com/SkarpKat/DistributedMutualExclusion";
 
 package Service;  
 
-service Service{
-    rpc Request(RequestMessage) returns (ResponseMessage);
-}
-
-message RequestMessage{
-    string message = 1;
-    int32 id = 2;
-    int64 timestamp = 3;
-}
-
-message ResponseMessage{
-    string message = 1;
-    int32 id = 2;
-    int64 timestamp = 3;
-}
+service Service {
+    rpc RequestCriticalSection(RequestCriticalSectionRequest) returns (RequestCriticalSectionResponse);
+    rpc ReleaseCriticalSection(ReleaseCriticalSectionRequest) returns (ReleaseCriticalSectionResponse);
+  }
+  
+  message RequestCriticalSectionRequest {
+    string clientId = 1;
+    int64 lamportTimestamp = 2;
+  }
+  
+  message RequestCriticalSectionResponse {
+    bool granted = 1;
+  }
+  
+  message ReleaseCriticalSectionRequest {
+    string clientId = 1;
+    int64 lamportTimestamp = 2;
+  }
+  
+  message ReleaseCriticalSectionResponse {
+    // You can include any response details if needed
+  }

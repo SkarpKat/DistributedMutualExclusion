@@ -1,196 +1,139 @@
+// client.go
 package main
 
 import (
 	"bufio"
 	"context"
-	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
-	"strconv"
-	"strings"
+	"sync"
+	"time"
 
 	pb "github.com/SkarpKat/DistributedMutualExclusion/proto"
 	"google.golang.org/grpc"
 )
 
-var (
-	id                  = flag.Int("id", 0, "id of the node")
-	nodeTimestamp int64 = 0
-	state               = "RELEASED"
-	portsPath           = "ports.txt"
-	queue               = make([]int32, 0)
-)
-
-type NodeServiceServer struct {
+type client struct {
 	pb.UnimplementedServiceServer
-	pb.RequestMessage
-	pb.ResponseMessage
+	id                string
+	addresses         []string
+	mu                sync.Mutex
+	inCriticalSection bool
+	waitingQueue      []string
+	lamportTimestamp  int64
 }
 
-func updateLamportTimestamp(timestamp int64) {
-	if timestamp > nodeTimestamp {
-		nodeTimestamp = timestamp + 1
-	} else {
-		nodeTimestamp++
+func (c *client) RequestCriticalSection(ctx context.Context, req *pb.RequestCriticalSectionRequest) (*pb.RequestCriticalSectionResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.inCriticalSection && len(c.waitingQueue) == 0 {
+		c.inCriticalSection = true
+		c.lamportTimestamp++
+		return &pb.RequestCriticalSectionResponse{Granted: true}, nil
 	}
+
+	// If not in the critical section or there are clients in the waiting queue, add the client to the waiting queue
+	c.waitingQueue = append(c.waitingQueue, req.ClientId)
+	return &pb.RequestCriticalSectionResponse{Granted: false}, nil
 }
 
-func (n *NodeServiceServer) Request(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
-	// implementation goes here
-	updateLamportTimestamp(in.GetTimestamp())
-	// Implicit call to request service defined in proto file
-	log.Printf("Received request from node %v with timestamp %v", in.GetId(), in.GetTimestamp())
-	if state == "HELD" || (state == "WANTED" && in.GetTimestamp() < nodeTimestamp) {
-		queue = append(queue, in.GetId())
-		log.Printf("Node %v added to queue", in.GetId())
-		updateLamportTimestamp(in.GetTimestamp())
-		return &pb.ResponseMessage{Message: state, Timestamp: nodeTimestamp}, nil
+func (c *client) ReleaseCriticalSection(ctx context.Context, req *pb.ReleaseCriticalSectionRequest) (*pb.ReleaseCriticalSectionResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Release the critical section and notify the next client in the waiting queue
+	c.inCriticalSection = false
+
+	if len(c.waitingQueue) > 0 {
+		nextClient := c.waitingQueue[0]
+		c.waitingQueue = c.waitingQueue[1:]
+
+		// Notify the next client in the waiting queue
+		conn, err := grpc.Dial(fmt.Sprintf(":%s", nextClient), grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("Failed to connect: %v", err)
+		}
+		defer conn.Close()
+
+		client := pb.NewServiceClient(conn)
+		c.lamportTimestamp++
+		_, err = client.RequestCriticalSection(context.Background(), &pb.RequestCriticalSectionRequest{ClientId: nextClient, LamportTimestamp: c.lamportTimestamp})
+		if err != nil {
+			log.Fatalf("Failed to notify next client: %v", err)
+		}
+	}
+	return &pb.ReleaseCriticalSectionResponse{}, nil
+}
+
+func (c *client) enterCriticalSection() {
+	// For simplicity, pick a random address from the list
+	peerAddress := c.addresses[0]
+
+	conn, err := grpc.Dial(peerAddress, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	client := pb.NewServiceClient(conn)
+
+	req := &pb.RequestCriticalSectionRequest{ClientId: c.id, LamportTimestamp: c.lamportTimestamp}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	res, err := client.RequestCriticalSection(ctx, req)
+	if err != nil {
+		log.Fatalf("Failed to request critical section: %v", err)
+	}
+
+	if res.Granted {
+		fmt.Printf("Client %s entered the critical section with Lamport timestamp %d\n", c.id, c.lamportTimestamp)
+		time.Sleep(2 * time.Second)                                                                                            // Simulate work in the critical section
+		c.ReleaseCriticalSection(ctx, &pb.ReleaseCriticalSectionRequest{ClientId: c.id, LamportTimestamp: c.lamportTimestamp}) // Release the critical section
 	} else {
-		updateLamportTimestamp(in.GetTimestamp())
-		return &pb.ResponseMessage{Message: state, Timestamp: nodeTimestamp}, nil
+		fmt.Printf("Client %s is waiting for the critical section\n", c.id)
 	}
 }
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	clientID := os.Args[1] // Get client ID from command line argument
 
-	flag.Parse()
+	// For simplicity, a list of addresses is predefined
+	addresses := []string{"localhost:50051", "localhost:50052", "localhost:50053"}
 
-	logPath := "logs/node" + strconv.Itoa(*id) + ".log"
-	sharedFilePath := "sharedFile.log"
+	client := &client{id: clientID, addresses: addresses}
 
-	// WRONLY = Write Only, 0644 = file permission that allows read and write for owner, and read for everyone else
-	file, err := os.OpenFile(logPath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	listen, err := net.Listen("tcp", fmt.Sprintf(":%s", clientID))
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	log.SetOutput(io.MultiWriter(file, os.Stdout))
-
-	portFile, err := os.Open(portsPath)
-	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	ports := make([]string, 0)
-	scanner := bufio.NewScanner(portFile)
-	for scanner.Scan() {
-		log.Printf("Port: %v added to slice", scanner.Text())
-		ports = append(ports, scanner.Text())
-	}
-
-	var port string
-
-	for i := 0; i < len(ports); i++ {
-		if strings.Split(ports[i], ",")[0] == strconv.Itoa(*id) {
-			port = strings.Split(ports[i], ",")[1]
-		}
-	}
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-
-	// Make node host a server
 	grpcServer := grpc.NewServer()
+	pb.RegisterServiceServer(grpcServer, client)
 
-	Listener := &NodeServiceServer{
-		UnimplementedServiceServer: pb.UnimplementedServiceServer{},
-		RequestMessage:             pb.RequestMessage{},
-		ResponseMessage:            pb.ResponseMessage{},
-	}
+	fmt.Printf("Client %s is running on port :%s\n", clientID, clientID)
 
-	pb.RegisterServiceServer(grpcServer, Listener)
-
-	// Make command line interface
 	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for {
-			for scanner.Scan() {
-				fmt.Print("Enter command: ")
-				text := scanner.Text()
-				// text = strings.Replace(text, "\n", "", -1)
-				switch text {
-				case "request":
-					if state == "RELEASED" {
-						state = "WANTED"
-						log.Printf("Node %v is requesting critical section", *id)
-						for i := 0; i < len(ports); i++ {
-							if strings.Split(ports[i], ",")[0] != strconv.Itoa(*id) {
-								conn, err := grpc.Dial("localhost:"+strings.Split(ports[i], ",")[1], grpc.WithBlock(), grpc.WithInsecure())
-								if err != nil {
-									log.Fatalf("Could not connect: %v", err)
-								}
-
-								c := pb.NewServiceClient(conn)
-								response, err := c.Request(ctx, &pb.RequestMessage{Id: int32(*id), Timestamp: nodeTimestamp})
-								if err != nil {
-									log.Fatalf("Error when calling Request: %v", err)
-								}
-								log.Printf("Response from node %v: %v", strings.Split(ports[i], ",")[0], response.GetMessage())
-								updateLamportTimestamp(response.GetTimestamp())
-								if response.GetMessage() == "HELD" {
-									log.Printf("Node %v is in critical section", *id)
-									file, err := os.OpenFile(sharedFilePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-									if err != nil {
-										log.Fatal(err)
-									}
-									file.WriteString("Node " + strconv.Itoa(*id) + " is in critical section\n")
-									file.Close()
-								}
-								conn.Close()
-							}
-
-						}
-					} else {
-						log.Printf("Node %v is already requesting critical section", *id)
-					}
-				case "release":
-					if state == "HELD" {
-						state = "RELEASED"
-						log.Printf("Node %v is releasing critical section", *id)
-						for i := 0; i < len(queue); i++ {
-							conn, err := grpc.Dial("localhost:"+strings.Split(ports[queue[i]], ",")[1], grpc.WithInsecure())
-							if err != nil {
-								log.Fatalf("Could not connect: %v", err)
-							}
-							c := pb.NewServiceClient(conn)
-							response, err := c.Request(ctx, &pb.RequestMessage{Id: int32(*id), Timestamp: nodeTimestamp})
-							if err != nil {
-								log.Fatalf("Error when calling Request: %v", err)
-							}
-							log.Printf("Response from node %v: %v", strings.Split(ports[queue[i]], ",")[0], response.GetMessage())
-							updateLamportTimestamp(response.GetTimestamp())
-							if response.GetMessage() == "HELD" {
-								log.Printf("Node %v is in critical section", *id)
-								file, err := os.OpenFile(sharedFilePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-								if err != nil {
-									log.Fatal(err)
-								}
-								file.WriteString("Node " + string(*id) + " is in critical section\n")
-								file.Close()
-							}
-							conn.Close()
-						}
-					} else {
-						log.Printf("Node %v is not in critical section", *id)
-					}
-				case "exit":
-					log.Printf("Node %v is exiting", *id)
-					os.Exit(0)
-				default:
-					log.Printf("Invalid command")
-
-				}
-			}
+		if err := grpcServer.Serve(listen); err != nil {
+			log.Fatalf("Failed to serve: %v", err)
 		}
 	}()
 
-	// Start listening for requests
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	// Command-line interface for runtime commands
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		command := scanner.Text()
 
+		switch command {
+		case "request":
+			client.enterCriticalSection()
+		case "release":
+			client.ReleaseCriticalSection(context.Background(), &pb.ReleaseCriticalSectionRequest{})
+		default:
+			fmt.Println("Invalid command. Available commands: 'request', 'release'")
+		}
+	}
 }

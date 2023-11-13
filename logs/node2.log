@@ -1,0 +1,40 @@
+2023/11/13 20:57:29 Port: 0,10001 added to slice
+2023/11/13 20:57:29 Port: 1,10002 added to slice
+2023/11/13 20:57:29 Port: 2,10003 added to slice
+2023/11/13 20:57:46 Received request from node 0 with timestamp 3
+2023/11/13 20:58:09 Received request from node 1 with timestamp 9
+2023/11/13 20:59:01 Node 2 is requesting critical section
+2023/11/13 20:59:01 Response from node 0: WANTED
+2023/11/13 20:59:01 Response from node 1: WANTED
+2023/11/13 20:59:48 Node 2 is not in critical section
+2023/11/13 22:10:18 Port: 0,10001 added to slice
+2023/11/13 22:10:18 Port: 1,10002 added to slice
+2023/11/13 22:10:18 Port: 2,10003 added to slice
+2023/11/13 22:10:23 Received request from node 0 with timestamp 2
+2023/11/13 22:18:31 Port: 0,10001 added to slice
+2023/11/13 22:18:31 Port: 1,10002 added to slice
+2023/11/13 22:18:31 Port: 2,10003 added to slice
+2023/11/13 22:18:35 Received request from node 0 with timestamp 2
+2023/11/13 22:18:35 Queueing request from node 0
+2023/11/13 22:19:01 Received request from node 1 with timestamp 6
+2023/11/13 22:19:01 Queueing request from node 1
+2023/11/13 22:19:10 Node 2 is requesting critical section
+2023/11/13 22:19:10 Response from node 0: HELD
+2023/11/13 22:19:10 Node 2 is in critical section
+2023/11/13 22:19:10 Response from node 1: HELD
+2023/11/13 22:19:10 Node 2 is in critical section
+2023/11/13 22:35:48 Port: 0,10001 added to slice
+2023/11/13 22:35:48 Port: 1,10002 added to slice
+2023/11/13 22:35:48 Port: 2,10003 added to slice
+2023/11/13 22:35:54 Received request from node 0 with timestamp 2
+2023/11/13 22:35:54 Queueing request from node 0
+2023/11/13 22:37:26 Port: 0,10001 added to slice
+2023/11/13 22:37:26 Port: 1,10002 added to slice
+2023/11/13 22:37:26 Port: 2,10003 added to slice
+2023/11/13 22:37:33 Received request from node 0 with timestamp 2
+2023/11/13 22:37:33 Queueing request from node 0
+2023/11/13 22:38:16 Port: 0,10001 added to slice
+2023/11/13 22:38:16 Port: 1,10002 added to slice
+2023/11/13 22:38:16 Port: 2,10003 added to slice
+2023/11/13 22:38:20 Received request from node 0 with timestamp 4
+2023/11/13 22:38:20 Queueing request from node 0
