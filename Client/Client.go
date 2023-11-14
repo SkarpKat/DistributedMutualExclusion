@@ -128,6 +128,7 @@ func main() {
 				command := scanner.Text()
 				switch command {
 				case "request":
+					log.Printf("Node %v is requesting critical section", *id)
 					if state == "RELEASED" {
 						state = "WANTED"
 						for _, client := range clients {
