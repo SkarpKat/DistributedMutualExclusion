@@ -1,0 +1,87 @@
+2023/11/14 16:04:09 Port: 0, 6001 added to slice
+2023/11/14 16:04:09 Port: 1, 6002 added to slice
+2023/11/14 16:04:09 Port: 2, 6003 added to slice
+2023/11/14 16:04:09 Dialing port  6003
+2023/11/14 16:08:16 Port: 0, 6001 added to slice
+2023/11/14 16:08:16 Port: 1, 6002 added to slice
+2023/11/14 16:08:16 Port: 2, 6003 added to slice
+2023/11/14 16:08:16 Dialing port  6003
+2023/11/14 16:28:14 Port: 0, 6001 added to slice
+2023/11/14 16:28:14 Port: 1, 6002 added to slice
+2023/11/14 16:28:14 Port: 2, 6003 added to slice
+2023/11/14 16:28:14 Dialing port  6003
+2023/11/14 16:30:21 Port: 0, 6001 added to slice
+2023/11/14 16:30:21 Port: 1, 6002 added to slice
+2023/11/14 16:30:21 Port: 2, 6003 added to slice
+2023/11/14 16:30:21 Dialing port  6003
+2023/11/14 16:31:34 Port: 0, 6001 added to slice
+2023/11/14 16:31:34 Port: 1, 6002 added to slice
+2023/11/14 16:31:34 Port: 2, 6003 added to slice
+2023/11/14 16:31:34 Dialing port  6003
+2023/11/14 16:32:35 Port: 0, 6001 added to slice
+2023/11/14 16:32:35 Port: 1, 6002 added to slice
+2023/11/14 16:32:35 Port: 2, 6003 added to slice
+2023/11/14 16:32:35 Dialing port  6001
+2023/11/14 16:33:52 Port: 0, 6001 added to slice
+2023/11/14 16:33:52 Port: 1, 6002 added to slice
+2023/11/14 16:33:52 Port: 2, 6003 added to slice
+2023/11/14 16:33:52 Dialing port  6001
+2023/11/14 16:33:52 Dialing port  6002
+2023/11/14 16:34:16 Node 2 is in critical section
+2023/11/14 16:34:24 Node 2 is out of critical section
+2023/11/14 16:39:14 Port: 0, 6001 added to slice
+2023/11/14 16:39:14 Port: 1, 6002 added to slice
+2023/11/14 16:39:14 Port: 2, 6003 added to slice
+2023/11/14 16:39:14 Dialing port  6001
+2023/11/14 16:39:30 Dialing port  6002
+2023/11/14 16:40:52 Node 2 is in critical section
+2023/11/14 16:40:56 Node 2 is out of critical section
+2023/11/14 16:42:30 Port: 0, 6001 added to slice
+2023/11/14 16:42:30 Port: 1, 6002 added to slice
+2023/11/14 16:42:30 Port: 2, 6003 added to slice
+2023/11/14 16:42:30 Dialing port  6001
+2023/11/14 16:42:46 Dialing port  6002
+2023/11/14 16:54:40 Port: 0, 6001 added to slice
+2023/11/14 16:54:40 Port: 1, 6002 added to slice
+2023/11/14 16:54:40 Port: 2, 6003 added to slice
+2023/11/14 16:54:40 Dialing port  6001
+2023/11/14 16:54:50 Dialing port  6002
+2023/11/14 16:55:26 Port: 0, 6001 added to slice
+2023/11/14 16:55:26 Port: 1, 6002 added to slice
+2023/11/14 16:55:26 Port: 2, 6003 added to slice
+2023/11/14 16:55:26 Dialing port  6001
+2023/11/14 16:55:26 Dialing port  6002
+2023/11/14 17:11:00 Port: 0, 6001 added to slice
+2023/11/14 17:11:00 Port: 1, 6002 added to slice
+2023/11/14 17:11:00 Port: 2, 6003 added to slice
+2023/11/14 17:11:00 Dialing port  6001
+2023/11/14 17:11:00 Dialing port  6002
+2023/11/14 17:12:29 Port: 0, 6001 added to slice
+2023/11/14 17:12:29 Port: 1, 6002 added to slice
+2023/11/14 17:12:29 Port: 2, 6003 added to slice
+2023/11/14 17:12:29 Dialing port  6001
+2023/11/14 17:12:29 Dialing port  6002
+2023/11/14 17:28:33 Port: 0, 6001 added to slice
+2023/11/14 17:28:33 Port: 1, 6002 added to slice
+2023/11/14 17:28:33 Port: 2, 6003 added to slice
+2023/11/14 17:28:33 Dialing port  6001
+2023/11/14 17:28:43 Dialing port  6002
+2023/11/14 17:29:21 Port: 0, 6001 added to slice
+2023/11/14 17:29:21 Port: 1, 6002 added to slice
+2023/11/14 17:29:21 Port: 2, 6003 added to slice
+2023/11/14 17:29:21 Dialing port  6001
+2023/11/14 17:31:32 Port: 0, 6001 added to slice
+2023/11/14 17:31:32 Port: 1, 6002 added to slice
+2023/11/14 17:31:32 Port: 2, 6003 added to slice
+2023/11/14 17:31:32 Dialing port  6001
+2023/11/14 17:31:41 Dialing port  6002
+2023/11/14 17:33:11 Port: 0, 6001 added to slice
+2023/11/14 17:33:11 Port: 1, 6002 added to slice
+2023/11/14 17:33:11 Port: 2, 6003 added to slice
+2023/11/14 17:33:11 Dialing port  6001
+2023/11/14 17:33:11 Dialing port  6002
+2023/11/14 17:35:29 Port: 0, 6001 added to slice
+2023/11/14 17:35:29 Port: 1, 6002 added to slice
+2023/11/14 17:35:29 Port: 2, 6003 added to slice
+2023/11/14 17:35:29 Dialing port  6001
+2023/11/14 17:35:29 Dialing port  6002

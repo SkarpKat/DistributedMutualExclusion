@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	pb "github.com/SkarpKat/DistributedMutualExclusion/proto"
 	"google.golang.org/grpc"
@@ -22,12 +23,11 @@ var (
 	state               = "RELEASED"
 	portsPath           = "ports.txt"
 	queue               = make([]int32, 0)
+	clients             = make(map[int32]pb.ServiceClient)
 )
 
 type NodeServiceServer struct {
 	pb.UnimplementedServiceServer
-	pb.RequestMessage
-	pb.ResponseMessage
 }
 
 func updateLamportTimestamp(timestamp int64) {
@@ -39,26 +39,25 @@ func updateLamportTimestamp(timestamp int64) {
 }
 
 func (n *NodeServiceServer) Request(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
-	// implementation goes here
-	updateLamportTimestamp(in.GetTimestamp())
-	// Implicit call to request service defined in proto file
-	log.Printf("Received request from node %v with timestamp %v", in.GetId(), in.GetTimestamp())
-	if state == "HELD" || (state == "WANTED" && in.GetTimestamp() < nodeTimestamp) {
-		queue = append(queue, in.GetId())
-		log.Printf("Node %v added to queue", in.GetId())
-		updateLamportTimestamp(in.GetTimestamp())
-		return &pb.ResponseMessage{Message: state, Timestamp: nodeTimestamp}, nil
-	} else {
-		updateLamportTimestamp(in.GetTimestamp())
-		return &pb.ResponseMessage{Message: state, Timestamp: nodeTimestamp}, nil
+
+	for state == "HELD" {
+		time.Sleep(1 * time.Second)
 	}
+
+	for state == "WANTED" && in.Timestamp > nodeTimestamp {
+		time.Sleep(1 * time.Second)
+	}
+
+	updateLamportTimestamp(in.Timestamp)
+	return &pb.ResponseMessage{Timestamp: nodeTimestamp, Message: "OK", Id: int32(*id)}, nil
+
 }
 
 func main() {
+	flag.Parse()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	flag.Parse()
 
 	logPath := "logs/node" + strconv.Itoa(*id) + ".log"
 	sharedFilePath := "sharedFile.log"
@@ -91,98 +90,72 @@ func main() {
 		}
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
 
 	// Make node host a server
 	grpcServer := grpc.NewServer()
 
-	Listener := &NodeServiceServer{
-		UnimplementedServiceServer: pb.UnimplementedServiceServer{},
-		RequestMessage:             pb.RequestMessage{},
-		ResponseMessage:            pb.ResponseMessage{},
-	}
+	pb.RegisterServiceServer(grpcServer, &NodeServiceServer{})
 
-	pb.RegisterServiceServer(grpcServer, Listener)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve: %v", err)
+		}
+	}()
+
+	for i := 0; i < len(ports); i++ {
+		if strings.Split(ports[i], ",")[0] == strconv.Itoa(*id) {
+			continue
+		}
+		port := strings.Split(ports[i], ",")[1]
+		log.Printf("Dialing port %v", port)
+		conn, err := grpc.Dial(fmt.Sprintf(":%v", port), grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer conn.Close()
+		c := pb.NewServiceClient(conn)
+		clients[int32(i)] = c
+	}
 
 	// Make command line interface
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for {
 			for scanner.Scan() {
-				fmt.Print("Enter command: ")
-				text := scanner.Text()
-				// text = strings.Replace(text, "\n", "", -1)
-				switch text {
+				command := scanner.Text()
+				switch command {
 				case "request":
 					if state == "RELEASED" {
 						state = "WANTED"
-						log.Printf("Node %v is requesting critical section", *id)
-						for i := 0; i < len(ports); i++ {
-							if strings.Split(ports[i], ",")[0] != strconv.Itoa(*id) {
-								conn, err := grpc.Dial("localhost:"+strings.Split(ports[i], ",")[1], grpc.WithBlock(), grpc.WithInsecure())
-								if err != nil {
-									log.Fatalf("Could not connect: %v", err)
-								}
-
-								c := pb.NewServiceClient(conn)
-								response, err := c.Request(ctx, &pb.RequestMessage{Id: int32(*id), Timestamp: nodeTimestamp})
-								if err != nil {
-									log.Fatalf("Error when calling Request: %v", err)
-								}
-								log.Printf("Response from node %v: %v", strings.Split(ports[i], ",")[0], response.GetMessage())
-								updateLamportTimestamp(response.GetTimestamp())
-								if response.GetMessage() == "HELD" {
-									log.Printf("Node %v is in critical section", *id)
-									file, err := os.OpenFile(sharedFilePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-									if err != nil {
-										log.Fatal(err)
-									}
-									file.WriteString("Node " + strconv.Itoa(*id) + " is in critical section\n")
-									file.Close()
-								}
-								conn.Close()
-							}
-
+						for _, client := range clients {
+							client.Request(ctx, &pb.RequestMessage{Id: int32(*id), Timestamp: nodeTimestamp, Message: "WANTED"})
 						}
-					} else {
-						log.Printf("Node %v is already requesting critical section", *id)
-					}
-				case "release":
-					if state == "HELD" {
+						state = "HELD"
+						log.Printf("Node %v is in critical section", *id)
+						file, err := os.OpenFile(sharedFilePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+						if err != nil {
+							log.Fatal(err)
+						}
+						file.WriteString("Node " + strconv.Itoa(*id) + " is in critical section\n")
+						criticalScanner := bufio.NewScanner(os.Stdin)
+						for criticalScanner.Scan() {
+							if criticalScanner.Text() == "exit" {
+								break
+							}
+							file.WriteString(criticalScanner.Text() + "\n")
+						}
+						file.Close()
 						state = "RELEASED"
-						log.Printf("Node %v is releasing critical section", *id)
-						for i := 0; i < len(queue); i++ {
-							conn, err := grpc.Dial("localhost:"+strings.Split(ports[queue[i]], ",")[1], grpc.WithInsecure())
-							if err != nil {
-								log.Fatalf("Could not connect: %v", err)
-							}
-							c := pb.NewServiceClient(conn)
-							response, err := c.Request(ctx, &pb.RequestMessage{Id: int32(*id), Timestamp: nodeTimestamp})
-							if err != nil {
-								log.Fatalf("Error when calling Request: %v", err)
-							}
-							log.Printf("Response from node %v: %v", strings.Split(ports[queue[i]], ",")[0], response.GetMessage())
-							updateLamportTimestamp(response.GetTimestamp())
-							if response.GetMessage() == "HELD" {
-								log.Printf("Node %v is in critical section", *id)
-								file, err := os.OpenFile(sharedFilePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-								if err != nil {
-									log.Fatal(err)
-								}
-								file.WriteString("Node " + string(*id) + " is in critical section\n")
-								file.Close()
-							}
-							conn.Close()
-						}
+						log.Printf("Node %v is out of critical section", *id)
 					} else {
-						log.Printf("Node %v is not in critical section", *id)
+						log.Printf("Node %v is already in critical section", *id)
 					}
 				case "exit":
-					log.Printf("Node %v is exiting", *id)
 					os.Exit(0)
-				default:
-					log.Printf("Invalid command")
-
 				}
 			}
 		}
