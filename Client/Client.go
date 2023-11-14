@@ -22,7 +22,6 @@ var (
 	nodeTimestamp int64 = 0
 	state               = "RELEASED"
 	portsPath           = "ports.txt"
-	queue               = make([]int32, 0)
 	clients             = make(map[int32]pb.ServiceClient)
 )
 
